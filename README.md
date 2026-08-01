@@ -33,5 +33,5 @@ Then open http://127.0.0.1:8000/docs
 - [x] [Lesson 2](docs/lesson-2.md) — FastAPI, endpoints, HTTP methods, JSON
 - [x] [Lesson 3](docs/lesson-3.md) — Groq, API keys, environment variables, POST /chat
 - [x] [Lesson 4](docs/lesson-4.md) — ChatPromptTemplate, system prompt, human prompt
-- [ ] Lesson 5 — StrOutputParser
+- [x] [Lesson 5](docs/lesson-5.md) — StrOutputParser
 # Gen-AI-Basics

@@ -6,9 +6,9 @@ from fastapi import FastAPI
 # BaseModel lets us describe the SHAPE of incoming JSON so FastAPI can validate it
 from pydantic import BaseModel
 
-# Import our own file, llm.py, and take TWO things out of it now.
+# Import our own file, llm.py, and take THREE things out of it now.
 # No "./" and no ".py" -- Python finds llm.py because it sits next to this file.
-from llm import llm, prompt
+from llm import llm, prompt, parser
 
 
 # FastAPI is a class. Calling it with () creates an object (an "instance").
@@ -57,12 +57,18 @@ def chat(request: ChatRequest):
     # .invoke() returns a MESSAGE OBJECT, not a plain string.
     result = llm.invoke(messages)
 
+    # STEP 3: turn that message object into a plain string.
+    # The parser does the ".content" reach-in for us, so our endpoint no longer
+    # needs to know how a model reply is shaped. Note it is .invoke() again --
+    # prompts, models and parsers all share the same one-method interface.
+    answer = parser.invoke(result)
+
     # A dictionary can hold as many key/value pairs as we like, separated by commas.
-    # .content pulls the actual text out of that message object.
+    # "answer" is now already a string, so there is nothing left to unwrap here.
     # llm.model_name asks the llm object which model it is -- so the name is stored
     # in ONE place (llm.py). Typing "llama-3.3-70b-versatile" again here would mean
     # two copies to keep in sync, and one of them would eventually be wrong.
     return {
-        "answer": result.content,
+        "answer": answer,
         "model": llm.model_name,
     }

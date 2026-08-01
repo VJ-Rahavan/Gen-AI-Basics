@@ -7,6 +7,9 @@ from langchain_groq import ChatGroq
 # ChatPromptTemplate builds a reusable, fill-in-the-blank list of chat messages
 from langchain_core.prompts import ChatPromptTemplate
 
+# StrOutputParser turns a model's message object into a plain string
+from langchain_core.output_parsers import StrOutputParser
+
 
 # Runs once, when this file is first imported.
 # It finds .env and loads GROQ_API_KEY into the environment,
@@ -44,3 +47,8 @@ prompt = ChatPromptTemplate.from_messages(
         ("human", "{message}"),
     ]
 )
+
+
+# The parser: takes the model's reply object and gives back just the text.
+# Created once here, reused for every request -- it holds no state.
+parser = StrOutputParser()
