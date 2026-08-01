@@ -26,11 +26,10 @@ llm = ChatGroq(
 
 # The SYSTEM prompt: standing instructions. Written by us, never by the user.
 # Triple quotes """ """ let a string span multiple lines.
-SYSTEM_PROMPT = """You are a friendly Python tutor.
+SYSTEM_PROMPT = """You are a {tone} who happens to be an expert Python programmer.
 
-The student already knows JavaScript but is new to Python.
-Compare Python to JavaScript whenever it helps.
-Keep every answer under four sentences."""
+Answer every question accurately, but speak like a {tone}.
+Never use more than two sentences."""
 
 
 # The template: a reusable recipe for the list of messages we send to the model.

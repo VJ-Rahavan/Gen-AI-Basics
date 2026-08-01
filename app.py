@@ -51,7 +51,7 @@ def chat(request: ChatRequest):
     # STEP 1: fill the template's {message} placeholder with the user's text.
     # "message=" is a KEYWORD ARGUMENT -- the name must match the placeholder.
     # This returns a LIST of two messages: our system message, then the human one.
-    messages = prompt.format_messages(message=request.message)
+    messages = prompt.format_messages(message=request.message,tone="Luffy")
 
     # STEP 2: send that whole list of messages to Groq and wait for the reply.
     # .invoke() returns a MESSAGE OBJECT, not a plain string.
