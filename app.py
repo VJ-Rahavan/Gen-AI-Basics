@@ -6,9 +6,9 @@ from fastapi import FastAPI
 # BaseModel lets us describe the SHAPE of incoming JSON so FastAPI can validate it
 from pydantic import BaseModel
 
-# Import our own file, llm.py, and take the variable named "llm" out of it.
+# Import our own file, llm.py, and take TWO things out of it now.
 # No "./" and no ".py" -- Python finds llm.py because it sits next to this file.
-from llm import llm
+from llm import llm, prompt
 
 
 # FastAPI is a class. Calling it with () creates an object (an "instance").
@@ -48,9 +48,14 @@ def chat(request: ChatRequest):
     # and hands us a ready-made ChatRequest object.
     # Dot access here (not ["..."]) -- it is an object, not a dictionary.
 
-    # .invoke() sends the text to Groq and waits for the reply.
-    # It returns a MESSAGE OBJECT, not a plain string.
-    result = llm.invoke(request.message)
+    # STEP 1: fill the template's {message} placeholder with the user's text.
+    # "message=" is a KEYWORD ARGUMENT -- the name must match the placeholder.
+    # This returns a LIST of two messages: our system message, then the human one.
+    messages = prompt.format_messages(message=request.message)
+
+    # STEP 2: send that whole list of messages to Groq and wait for the reply.
+    # .invoke() returns a MESSAGE OBJECT, not a plain string.
+    result = llm.invoke(messages)
 
     # A dictionary can hold as many key/value pairs as we like, separated by commas.
     # .content pulls the actual text out of that message object.

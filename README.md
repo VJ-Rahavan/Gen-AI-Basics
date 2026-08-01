@@ -29,9 +29,9 @@ Then open http://127.0.0.1:8000/docs
 
 ## Lesson progress
 
-- [x] Lesson 1 — Python, uv, virtual environments, pyproject.toml, running the server
-- [x] Lesson 2 — FastAPI, endpoints, HTTP methods, JSON
-- [x] Lesson 3 — Groq, API keys, environment variables, POST /chat
-- [ ] Lesson 4 — ChatPromptTemplate, system prompt, human prompt
+- [x] [Lesson 1](docs/lesson-1.md) — Python, uv, virtual environments, pyproject.toml, running the server
+- [x] [Lesson 2](docs/lesson-2.md) — FastAPI, endpoints, HTTP methods, JSON
+- [x] [Lesson 3](docs/lesson-3.md) — Groq, API keys, environment variables, POST /chat
+- [x] [Lesson 4](docs/lesson-4.md) — ChatPromptTemplate, system prompt, human prompt
 - [ ] Lesson 5 — StrOutputParser
 # Gen-AI-Basics
