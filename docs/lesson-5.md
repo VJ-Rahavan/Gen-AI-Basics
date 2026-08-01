@@ -385,3 +385,79 @@ Your final project is five files, `app.py` is under 70 lines, and every line has
 2. **Streaming** — `.stream()` instead of `.invoke()`, so words appear as they're generated instead of after a 2-second wait.
 3. **Memory** — appending `AIMessage` back onto the message list so the assistant remembers the conversation. This is why Lesson 4's "roles" detour mattered.
 4. **Error handling** — right now a bad key gives your users a bare `500`. `try`/`except` and FastAPI's `HTTPException` fix that.
+
+---
+
+## Addendum — Exercise 3, worked (per-request `tone`)
+
+All four tests pass. The submitted version is **better than the exercise asked for**.
+
+### Test results
+
+| Test | Result |
+|---|---|
+| `{"message":"What is a list?","tone":"medieval knight"}` | `200` — *"a collection of items, akin to a noble's retinue... 'Tis a most useful data structure"* |
+| `{"message":"What is a list?","tone":"sarcastic teenager"}` | `200` — *"stores a collection of items in a specific order, **duh**... okay?"* |
+| `{"message":"What is a list?"}` — tone omitted | `200` — *"like me treasure chest filled with goodies... **arrr!**"* ← default kicked in |
+| `{"tone":"pirate"}` — message omitted | `422` — validation still catches the missing field |
+
+Same question all three times. Three completely different voices, one correct answer each.
+
+`print(result.usage_metadata)` from exercise 1 also works — the server terminal shows:
+
+```
+{'input_tokens': 73, 'output_tokens': 58, 'total_tokens': 131}
+{'input_tokens': 75, 'output_tokens': 45, 'total_tokens': 120}
+{'input_tokens': 73, 'output_tokens': 57, 'total_tokens': 130}
+```
+
+### The code
+
+```python
+class ChatRequest(BaseModel):
+    message: str
+    tone: str = "luffy"  # Default value if the user doesn't provide one
+```
+
+```python
+    messages = prompt.format_messages(message=request.message, tone=request.tone)
+```
+
+### New concept: default values
+
+The exercise said to add `tone: str`. This version adds `= "luffy"` as well — a **default value**, which changes the field from *required* to *optional*: if the JSON has no `tone`, Pydantic fills in `"luffy"` instead of rejecting the request.
+
+This matters more than it looks. With a plain `tone: str`, the field would have been **required**, and every existing caller sending only `{"message": "..."}` would have started failing with a 422. The default keeps them all working. That is backward compatibility.
+
+FastAPI picks it up automatically. The generated schema:
+
+```json
+"tone": { "type": "string", "default": "luffy" },
+...
+"required": ["message"]
+```
+
+`message` is in `required`; `tone` isn't, and carries its default. Swagger UI reads this, so `/docs` shows `tone` as optional with `luffy` pre-filled — free documentation from four characters of code.
+
+**The rule to remember:** in Python, a default makes something optional. This works in function parameters too:
+
+```python
+def greet(name, greeting="Hello"):    # greeting is optional
+    return greeting + " " + name
+
+greet("Vijay")              # "Hello Vijay"
+greet("Vijay", "Hi")        # "Hi Vijay"
+```
+
+One strict catch — **in a function signature, defaults must come last**:
+
+```python
+def f(a=1, b):     # SyntaxError: non-default argument follows default argument
+```
+
+Pydantic classes are more forgiving about field order, but the function rule is absolute.
+
+### Two small things
+
+1. `message=request.message,tone=request.tone` is missing the space after the comma. PEP 8 wants `, `. Python does not care; humans reading the code do.
+2. The `print(result.usage_metadata)` line was meant to be temporary. Keeping it is fine, but a real app would use `logging` instead — `print` writes straight to stdout with no severity level and no way to switch it off in production.

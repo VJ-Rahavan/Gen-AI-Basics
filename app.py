@@ -38,6 +38,7 @@ def health():
 # "str" means string. FastAPI uses this to validate the request automatically.
 class ChatRequest(BaseModel):
     message: str
+    tone: str = "luffy"  # Default value if the user doesn't provide one
 
 
 # POST, not GET, because the client needs to SEND data in the request body.
@@ -51,18 +52,18 @@ def chat(request: ChatRequest):
     # STEP 1: fill the template's {message} placeholder with the user's text.
     # "message=" is a KEYWORD ARGUMENT -- the name must match the placeholder.
     # This returns a LIST of two messages: our system message, then the human one.
-    messages = prompt.format_messages(message=request.message,tone="Luffy")
+    messages = prompt.format_messages(message=request.message,tone=request.tone)
 
     # STEP 2: send that whole list of messages to Groq and wait for the reply.
     # .invoke() returns a MESSAGE OBJECT, not a plain string.
     result = llm.invoke(messages)
 
+    print(result.usage_metadata)
     # STEP 3: turn that message object into a plain string.
     # The parser does the ".content" reach-in for us, so our endpoint no longer
     # needs to know how a model reply is shaped. Note it is .invoke() again --
     # prompts, models and parsers all share the same one-method interface.
     answer = parser.invoke(result)
-
     # A dictionary can hold as many key/value pairs as we like, separated by commas.
     # "answer" is now already a string, so there is nothing left to unwrap here.
     # llm.model_name asks the llm object which model it is -- so the name is stored
