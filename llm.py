@@ -10,6 +10,9 @@ from langchain_core.prompts import ChatPromptTemplate
 # StrOutputParser turns a model's message object into a plain string
 from langchain_core.output_parsers import StrOutputParser
 
+# RunnableLambda turns any ordinary Python function into a chain component
+from langchain_core.runnables import RunnableLambda
+
 
 # Runs once, when this file is first imported.
 # It finds .env and loads GROQ_API_KEY into the environment,
@@ -59,12 +62,31 @@ prompt = ChatPromptTemplate.from_messages(
 parser = StrOutputParser()
 
 
+# An ORDINARY Python function. Nothing about it knows it is part of a chain.
+# It receives the dictionary that was passed to the chain, and must return
+# a dictionary too -- because the next component (the prompt) expects one.
+def clean_input(data):
+    # data["message"] reads the value out of the dictionary.
+    # .strip() removes spaces, tabs and newlines from BOTH ends of a string.
+    # It does not touch spaces in the middle: "  a  b  " becomes "a  b".
+    data["message"] = data["message"].strip()
+
+    # Always return the data, or the next component receives nothing.
+    return data
+
+
+# RunnableLambda wraps the plain function so it can join a | chain.
+# Written once here, reused by every chain below.
+cleaner = RunnableLambda(clean_input)
+
+
 # THE CHAIN. The | operator joins runnables together, left to right.
-# Read it as: "fill the prompt, THEN send it to the llm, THEN parse the reply."
+# Read it as: "clean the input, THEN fill the prompt, THEN send it to the llm,
+# THEN parse the reply."
 # Each piece's output becomes the next piece's input, automatically.
 # This builds the chain once at startup. It does NOT run anything yet --
 # nothing happens until someone calls chain.invoke(...) with real data.
-chain = prompt | llm | parser
+chain = cleaner | prompt | llm | parser
 
 simple_prompt = ChatPromptTemplate.from_messages(
     [
@@ -77,4 +99,6 @@ simple_prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-simple_chain = simple_prompt | llm | parser
+# The SAME cleaner object, reused. The trimming logic is written once,
+# but both chains get it.
+simple_chain = cleaner | simple_prompt | llm | parser
