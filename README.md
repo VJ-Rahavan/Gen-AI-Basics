@@ -34,4 +34,11 @@ Then open http://127.0.0.1:8000/docs
 - [x] [Lesson 3](docs/lesson-3.md) — Groq, API keys, environment variables, POST /chat
 - [x] [Lesson 4](docs/lesson-4.md) — ChatPromptTemplate, system prompt, human prompt
 - [x] [Lesson 5](docs/lesson-5.md) — StrOutputParser
+- [x] [Lesson 6](docs/lesson-6.md) — LCEL, the `|` operator, `prompt | llm | parser`
+- [ ] Lesson 7 — RunnableLambda
+- [ ] Lesson 8 — RunnableMap
+- [ ] Lesson 9 — RunnableBranch
+- [ ] Lesson 10 — JsonOutputParser
+- [ ] Lesson 11 — PydanticOutputParser
+- [ ] Lesson 12 — Structured Output
 # Gen-AI-Basics

@@ -34,6 +34,11 @@ SYSTEM_PROMPT = """You are a {tone} who happens to be an expert Python programme
 Answer every question accurately, but speak like a {tone}.
 Never use more than two sentences."""
 
+SIMPLE_SYSTEM_PROMPT = """You are an expert Python programmer who explains everything in simple terms and give examples.
+
+Answer every question accurately.
+Never use more than two sentences."""
+
 
 # The template: a reusable recipe for the list of messages we send to the model.
 # The [ ] is a LIST (like a JS array). Each ( ) inside is a TUPLE: a fixed pair
@@ -52,3 +57,24 @@ prompt = ChatPromptTemplate.from_messages(
 # The parser: takes the model's reply object and gives back just the text.
 # Created once here, reused for every request -- it holds no state.
 parser = StrOutputParser()
+
+
+# THE CHAIN. The | operator joins runnables together, left to right.
+# Read it as: "fill the prompt, THEN send it to the llm, THEN parse the reply."
+# Each piece's output becomes the next piece's input, automatically.
+# This builds the chain once at startup. It does NOT run anything yet --
+# nothing happens until someone calls chain.invoke(...) with real data.
+chain = prompt | llm | parser
+
+simple_prompt = ChatPromptTemplate.from_messages(
+    [
+        # Sent every single time, unchanged.
+        ("system", SIMPLE_SYSTEM_PROMPT),  
+
+        # {message} is a PLACEHOLDER, not Python syntax.
+        # LangChain fills it in later with the user's actual text.
+        ("human", "{message}"),
+    ]
+)
+
+simple_chain = simple_prompt | llm | parser

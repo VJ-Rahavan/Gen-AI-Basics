@@ -6,9 +6,9 @@ from fastapi import FastAPI
 # BaseModel lets us describe the SHAPE of incoming JSON so FastAPI can validate it
 from pydantic import BaseModel
 
-# Import our own file, llm.py, and take THREE things out of it now.
-# No "./" and no ".py" -- Python finds llm.py because it sits next to this file.
-from llm import llm, prompt, parser
+# We only need TWO things now: the finished chain, and llm (for its model name).
+# prompt and parser are no longer imported here -- they live inside the chain.
+from llm import llm, chain, simple_chain
 
 
 # FastAPI is a class. Calling it with () creates an object (an "instance").
@@ -49,23 +49,14 @@ def chat(request: ChatRequest):
     # and hands us a ready-made ChatRequest object.
     # Dot access here (not ["..."]) -- it is an object, not a dictionary.
 
-    # STEP 1: fill the template's {message} placeholder with the user's text.
-    # "message=" is a KEYWORD ARGUMENT -- the name must match the placeholder.
-    # This returns a LIST of two messages: our system message, then the human one.
-    messages = prompt.format_messages(message=request.message,tone=request.tone)
+    # ONE step now, instead of three. The chain already knows the order:
+    # prompt -> llm -> parser.
+    # The input is a DICTIONARY, not keyword arguments. Its keys must match the
+    # placeholders in the prompt template: {message} and {tone}.
+    answer = chain.invoke({"message": request.message, "tone": request.tone})
 
-    # STEP 2: send that whole list of messages to Groq and wait for the reply.
-    # .invoke() returns a MESSAGE OBJECT, not a plain string.
-    result = llm.invoke(messages)
-
-    print(result.usage_metadata)
-    # STEP 3: turn that message object into a plain string.
-    # The parser does the ".content" reach-in for us, so our endpoint no longer
-    # needs to know how a model reply is shaped. Note it is .invoke() again --
-    # prompts, models and parsers all share the same one-method interface.
-    answer = parser.invoke(result)
     # A dictionary can hold as many key/value pairs as we like, separated by commas.
-    # "answer" is now already a string, so there is nothing left to unwrap here.
+    # "answer" is already a string -- the parser inside the chain did that for us.
     # llm.model_name asks the llm object which model it is -- so the name is stored
     # in ONE place (llm.py). Typing "llama-3.3-70b-versatile" again here would mean
     # two copies to keep in sync, and one of them would eventually be wrong.
@@ -73,3 +64,14 @@ def chat(request: ChatRequest):
         "answer": answer,
         "model": llm.model_name,
     }
+
+class SimpleChatRequest(BaseModel):
+    message: str
+
+@app.post("/simple-chat")
+def simple_chat(request: SimpleChatRequest):
+    answer = simple_chain.invoke({"message": request.message})
+    return {
+        "answer": answer,
+        "model": llm.model_name,
+    }   
