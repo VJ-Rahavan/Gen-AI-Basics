@@ -10,8 +10,9 @@ from langchain_core.prompts import ChatPromptTemplate
 # StrOutputParser turns a model's message object into a plain string
 from langchain_core.output_parsers import StrOutputParser
 
-# RunnableLambda turns any ordinary Python function into a chain component
-from langchain_core.runnables import RunnableLambda
+# RunnableLambda turns any ordinary Python function into a chain component.
+# RunnableMap runs several runnables AT THE SAME TIME on the same input.
+from langchain_core.runnables import RunnableLambda, RunnableMap
 
 
 # Runs once, when this file is first imported.
@@ -102,3 +103,81 @@ simple_prompt = ChatPromptTemplate.from_messages(
 # The SAME cleaner object, reused. The trimming logic is written once,
 # but both chains get it.
 simple_chain = cleaner | simple_prompt | llm | parser
+
+
+# ----- Lesson 8: two small jobs we want done at the same time -----
+
+# Job 1: shorten the message.
+SUMMARY_SYSTEM_PROMPT = """Summarize the user's message in ONE short sentence.
+
+Reply with the summary only. Do not add any explanation."""
+
+# Job 2: translate the message.
+TRANSLATE_SYSTEM_PROMPT = """Translate the user's message into Tamil.
+
+Reply with the translation only. Do not add any explanation."""
+
+SENTIMENT_SYSTEM_PROMPT = """Reply with ONE word describing the tone of the user's message.
+
+Choose from: positive, negative, neutral.
+Reply with the single word only."""
+
+summary_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", SUMMARY_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+translate_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", TRANSLATE_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+sentiment_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", SENTIMENT_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+# Two ordinary chains, built exactly the way you already know.
+# Note both reuse the same llm and the same parser.
+summary_chain = summary_prompt | llm | parser
+translate_chain = translate_prompt | llm | parser
+sentiment_chain = sentiment_prompt | llm | parser
+
+# A BRIDGE function. summary_chain gives back a plain STRING, but
+# translate_chain begins with translate_prompt, which needs a DICTIONARY
+# holding a "message" key. So this WRAPS the string into that shape.
+# Name it after what goes in and what comes out -- it makes the mismatch obvious.
+def summary_to_message(summary):
+    return {"message": summary}
+
+
+summary_wrapper = RunnableLambda(summary_to_message)
+
+
+# SEQUENTIAL on purpose: translation cannot start until the summary exists.
+# str -> dict -> str is the shape flowing through here.
+translate_summary_chain = summary_chain | summary_wrapper | translate_chain
+# THE MAP. RunnableMap takes a DICTIONARY of runnables.
+# It sends the SAME input to every one of them, runs them AT THE SAME TIME,
+# and gives back a dictionary with the same keys -- each holding that
+# branch's result.
+analysis_map = RunnableMap(
+    {
+        "summary": summary_chain,
+        "translation": translate_chain,
+        "sentiment": sentiment_chain,
+        # This branch is itself a 2-step sequential chain. A branch of a
+        # parallel map can be as complicated as you like.
+        "tamil_summary": translate_summary_chain,
+    }
+)
+
+
+# The cleaner runs first (once), then the map fans out to both branches.
+analyze_chain = cleaner | analysis_map

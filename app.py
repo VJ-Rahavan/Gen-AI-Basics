@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 # We only need TWO things now: the finished chain, and llm (for its model name).
 # prompt and parser are no longer imported here -- they live inside the chain.
-from llm import llm, chain, simple_chain
+from llm import llm, chain, simple_chain, analyze_chain
 
 
 # FastAPI is a class. Calling it with () creates an object (an "instance").
@@ -74,4 +74,27 @@ def simple_chat(request: SimpleChatRequest):
     return {
         "answer": answer,
         "model": llm.model_name,
-    }   
+    }
+
+
+class AnalyzeRequest(BaseModel):
+    message: str
+
+
+@app.post("/analyze")
+def analyze(request: AnalyzeRequest):
+    # ONE invoke, but TWO trips to Groq happen inside -- at the same time.
+    # The result is a DICTIONARY, because analysis_map was built from one.
+    # Its keys are the keys we chose: "summary" and "translation".
+    result = analyze_chain.invoke({"message": request.message})
+
+    # Read the two branch results out of the dictionary with ["..."].
+    return {
+        "summary": result["summary"],
+        "translation": result["translation"],
+        # The summary, translated -- produced by the one branch that is
+        # itself a sequential chain.
+        "tamil_summary": result["tamil_summary"],
+        "model": llm.model_name,
+        "sentiment": result["sentiment"],
+    }
