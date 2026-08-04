@@ -16,6 +16,7 @@ from llm import (
     ask_chain,
     is_coding_question,
     report_chain,
+    report_v2_chain,
 )
 
 
@@ -149,5 +150,25 @@ def report(request: ReportRequest):
         "summary": result["summary"],
         "sentiment": result["sentiment"],
         "language": result["language"],
+        "model": llm.model_name,
+    }
+
+
+class ReportV2Request(BaseModel):
+    message: str
+
+
+@app.post("/report-v2")
+def report_v2(request: ReportV2Request):
+    # This chain ends with PydanticOutputParser, so "result" is a
+    # ChatResponse OBJECT -- already checked against the class.
+    result = report_v2_chain.invoke({"message": request.message})
+
+    # DOT access now, not ["..."], because it is an object and not a dictionary.
+    # Your editor can even autocomplete these field names.
+    return {
+        "summary": result.summary,
+        "sentiment": result.sentiment,
+        "language": result.language,
         "model": llm.model_name,
     }

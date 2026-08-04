@@ -9,7 +9,15 @@ from langchain_core.prompts import ChatPromptTemplate
 
 # StrOutputParser turns a model's message object into a plain string.
 # JsonOutputParser turns the model's JSON text into a real Python dictionary.
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+# PydanticOutputParser goes further: it CHECKS the data and builds an object.
+from langchain_core.output_parsers import (
+    StrOutputParser,
+    JsonOutputParser,
+    PydanticOutputParser,
+)
+
+# BaseModel describes a shape. Field lets us describe each individual value.
+from pydantic import BaseModel, Field
 
 # RunnableLambda turns any ordinary Python function into a chain component.
 # RunnableMap runs several runnables AT THE SAME TIME on the same input.
@@ -313,3 +321,24 @@ json_parser = JsonOutputParser()
 
 # Same shape of chain as always -- only the last piece changed.
 report_chain = cleaner | report_prompt | llm | json_parser
+
+
+# ----- Lesson 11: describe the answer as a CLASS, and check it -----
+
+# The SHAPE we expect back, written as a class -- exactly like ChatRequest
+# in app.py, but describing the model's OUTPUT instead of the user's input.
+# Field(description=...) is a note for the model about what belongs here.
+class ChatResponse(BaseModel):
+    summary: str = Field(description="one short sentence summarising the message")
+    sentiment: str = Field(description="positive, negative or neutral")
+    language: str = Field(description="the language the message is written in")
+
+
+# This parser knows about ChatResponse, so it can CHECK the model's reply
+# against it. If a field is missing or has the wrong type, it refuses.
+pydantic_parser = PydanticOutputParser(pydantic_object=ChatResponse)
+
+
+# The prompt is the same one from Lesson 10 -- we only swap the parser,
+# so the difference we see is caused by validation and nothing else.
+report_v2_chain = cleaner | report_prompt | llm | pydantic_parser

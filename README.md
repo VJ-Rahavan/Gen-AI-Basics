@@ -39,6 +39,6 @@ Then open http://127.0.0.1:8000/docs
 - [x] [Lesson 8](docs/lesson-8.md) — RunnableMap
 - [x] [Lesson 9](docs/lesson-9.md) — RunnableBranch
 - [x] [Lesson 10](docs/lesson-10.md) — JsonOutputParser
-- [ ] Lesson 11 — PydanticOutputParser
+- [x] [Lesson 11](docs/lesson-11.md) — PydanticOutputParser
 - [ ] Lesson 12 — Structured Output
 # Gen-AI-Basics
