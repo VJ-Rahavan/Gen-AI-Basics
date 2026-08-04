@@ -37,7 +37,7 @@ Then open http://127.0.0.1:8000/docs
 - [x] [Lesson 6](docs/lesson-6.md) — LCEL, the `|` operator, `prompt | llm | parser`
 - [x] [Lesson 7](docs/lesson-7.md) — RunnableLambda
 - [x] [Lesson 8](docs/lesson-8.md) — RunnableMap
-- [ ] Lesson 9 — RunnableBranch
+- [x] [Lesson 9](docs/lesson-9.md) — RunnableBranch
 - [ ] Lesson 10 — JsonOutputParser
 - [ ] Lesson 11 — PydanticOutputParser
 - [ ] Lesson 12 — Structured Output

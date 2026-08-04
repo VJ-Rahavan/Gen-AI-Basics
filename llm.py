@@ -12,7 +12,8 @@ from langchain_core.output_parsers import StrOutputParser
 
 # RunnableLambda turns any ordinary Python function into a chain component.
 # RunnableMap runs several runnables AT THE SAME TIME on the same input.
-from langchain_core.runnables import RunnableLambda, RunnableMap
+# RunnableBranch picks ONE runnable to run, based on a condition.
+from langchain_core.runnables import RunnableLambda, RunnableMap, RunnableBranch
 
 
 # Runs once, when this file is first imported.
@@ -181,3 +182,85 @@ analysis_map = RunnableMap(
 
 # The cleaner runs first (once), then the map fans out to both branches.
 analyze_chain = cleaner | analysis_map
+
+
+# ----- Lesson 9: send the question to the right specialist -----
+
+CODING_SYSTEM_PROMPT = """You are a senior software engineer.
+
+Answer the programming question precisely.
+Include a very short code example when it helps.
+Never use more than three sentences."""
+
+GENERAL_SYSTEM_PROMPT = """You are a friendly, knowledgeable assistant.
+
+Answer the question clearly, in plain everyday language.
+Never use more than three sentences."""
+
+
+coding_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", CODING_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+general_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", GENERAL_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+
+coding_chain = coding_prompt | llm | parser
+general_chain = general_prompt | llm | parser
+
+
+# A LIST of words that suggest a programming question.
+# This is a crude test, and that is fine for now -- see the lesson notes.
+CODING_KEYWORDS = [
+    "python",
+    "javascript",
+    "code",
+    "function",
+    "error",
+    "bug",
+    "api",
+    "list",
+    "dictionary",
+    "loop",
+    "class",
+    "variable",
+    "install",
+    "syntax",
+]
+
+
+# THE CONDITION. An ordinary function that must return True or False.
+# It receives the same dictionary the branches will receive.
+def is_coding_question(data):
+    # .lower() so "Python" and "python" both match.
+    message = data["message"].lower()
+
+    # "for X in Y" repeats the indented block once for every item in the list.
+    for keyword in CODING_KEYWORDS:
+        # "in" on a string asks: does this string contain that smaller string?
+        if keyword in message:
+            # Found one -- we are done, no need to check the rest.
+            return True
+
+    # The loop finished without finding anything.
+    return False
+
+
+# THE BRANCH. Each ( ) is a pair: (condition, runnable to use if it is True).
+# The LAST item has no condition -- it is the default, used when nothing matched.
+routed_chain = RunnableBranch(
+    (is_coding_question, coding_chain),
+    general_chain,
+)
+
+
+# Clean the input first, then route it to exactly ONE of the two chains.
+ask_chain = cleaner | routed_chain

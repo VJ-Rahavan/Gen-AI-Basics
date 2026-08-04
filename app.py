@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 # We only need TWO things now: the finished chain, and llm (for its model name).
 # prompt and parser are no longer imported here -- they live inside the chain.
-from llm import llm, chain, simple_chain, analyze_chain
+from llm import llm, chain, simple_chain, analyze_chain, ask_chain, is_coding_question
 
 
 # FastAPI is a class. Calling it with () creates an object (an "instance").
@@ -97,4 +97,29 @@ def analyze(request: AnalyzeRequest):
         "tamil_summary": result["tamil_summary"],
         "model": llm.model_name,
         "sentiment": result["sentiment"],
+    }
+
+
+class AskRequest(BaseModel):
+    message: str
+
+
+@app.post("/ask")
+def ask(request: AskRequest):
+    # The branch inside ask_chain decides which prompt to use. We never
+    # choose here -- we just hand over the message.
+    answer = ask_chain.invoke({"message": request.message})
+
+    # We also want to TELL the caller which route was taken.
+    # is_coding_question is a plain function, so we can simply call it.
+    # "if / else" picks one of two values -- note the colons and indentation.
+    if is_coding_question({"message": request.message}):
+        route = "coding"
+    else:
+        route = "general"
+
+    return {
+        "answer": answer,
+        "route": route,
+        "model": llm.model_name,
     }
