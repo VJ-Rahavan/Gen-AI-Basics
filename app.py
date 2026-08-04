@@ -8,7 +8,15 @@ from pydantic import BaseModel
 
 # We only need TWO things now: the finished chain, and llm (for its model name).
 # prompt and parser are no longer imported here -- they live inside the chain.
-from llm import llm, chain, simple_chain, analyze_chain, ask_chain, is_coding_question
+from llm import (
+    llm,
+    chain,
+    simple_chain,
+    analyze_chain,
+    ask_chain,
+    is_coding_question,
+    report_chain,
+)
 
 
 # FastAPI is a class. Calling it with () creates an object (an "instance").
@@ -121,5 +129,25 @@ def ask(request: AskRequest):
     return {
         "answer": answer,
         "route": route,
+        "model": llm.model_name,
+    }
+
+
+class ReportRequest(BaseModel):
+    message: str
+
+
+@app.post("/report")
+def report(request: ReportRequest):
+    # ONE call to Groq returns all three facts at once.
+    # Because the chain ends with JsonOutputParser, "result" is already a
+    # Python DICTIONARY -- not a string we would have to pick apart.
+    result = report_chain.invoke({"message": request.message})
+
+    # So we can read fields straight out of it, the normal way.
+    return {
+        "summary": result["summary"],
+        "sentiment": result["sentiment"],
+        "language": result["language"],
         "model": llm.model_name,
     }

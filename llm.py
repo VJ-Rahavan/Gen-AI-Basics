@@ -7,8 +7,9 @@ from langchain_groq import ChatGroq
 # ChatPromptTemplate builds a reusable, fill-in-the-blank list of chat messages
 from langchain_core.prompts import ChatPromptTemplate
 
-# StrOutputParser turns a model's message object into a plain string
-from langchain_core.output_parsers import StrOutputParser
+# StrOutputParser turns a model's message object into a plain string.
+# JsonOutputParser turns the model's JSON text into a real Python dictionary.
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 # RunnableLambda turns any ordinary Python function into a chain component.
 # RunnableMap runs several runnables AT THE SAME TIME on the same input.
@@ -281,3 +282,34 @@ routed_chain = RunnableBranch(
 
 # Clean the input first, then route it to exactly ONE of the two chains.
 ask_chain = cleaner | routed_chain
+
+
+# ----- Lesson 10: ask for JSON instead of prose -----
+
+# NOTE THE DOUBLED BRACES {{ and }}.
+# A single { starts a placeholder, so {"summary": ...} would be read as a
+# variable named '"summary"' and crash. Doubling them means "a literal brace".
+REPORT_SYSTEM_PROMPT = """You analyse the user's message.
+
+Reply with a JSON object in exactly this shape:
+{{"summary": "one short sentence", "sentiment": "positive or negative or neutral", "language": "the language the message is written in"}}
+
+Use lowercase for sentiment.
+Reply with the JSON object only. No code fences, no explanation."""
+
+
+report_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", REPORT_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+
+# The new parser. StrOutputParser gave us text; this one reads that text AS
+# JSON and hands back a real Python dictionary.
+json_parser = JsonOutputParser()
+
+
+# Same shape of chain as always -- only the last piece changed.
+report_chain = cleaner | report_prompt | llm | json_parser
