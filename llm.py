@@ -237,17 +237,34 @@ CODING_KEYWORDS = [
 ]
 
 
+# Characters we want to throw away before looking at words, so that
+# "list?" and "class." are seen as "list" and "class".
+PUNCTUATION = ".,?!;:()\"'`"
+
+
 # THE CONDITION. An ordinary function that must return True or False.
 # It receives the same dictionary the branches will receive.
 def is_coding_question(data):
     # .lower() so "Python" and "python" both match.
     message = data["message"].lower()
 
+    # A "for" over a STRING gives one character at a time.
+    # Replacing each punctuation mark with a space keeps words separated.
+    for mark in PUNCTUATION:
+        message = message.replace(mark, " ")
+
+    # .split() breaks the text into a LIST of separate words.
     # "for X in Y" repeats the indented block once for every item in the list.
-    for keyword in CODING_KEYWORDS:
-        # "in" on a string asks: does this string contain that smaller string?
-        if keyword in message:
+    for word in message.split():
+        # "in" on a LIST asks for an exact item, not a substring.
+        # This is why "capital" no longer matches the keyword "api".
+        if word in CODING_KEYWORDS:
             # Found one -- we are done, no need to check the rest.
+            return True
+
+        # Error names are their own word: IndexError, TypeError, KeyError...
+        # .endswith() catches all of them without listing each one.
+        if word.endswith("error"):
             return True
 
     # The loop finished without finding anything.
