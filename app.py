@@ -17,6 +17,7 @@ from llm import (
     is_coding_question,
     report_chain,
     report_v2_chain,
+    report_v3_chain,
 )
 
 
@@ -166,6 +167,25 @@ def report_v2(request: ReportV2Request):
 
     # DOT access now, not ["..."], because it is an object and not a dictionary.
     # Your editor can even autocomplete these field names.
+    return {
+        "summary": result.summary,
+        "sentiment": result.sentiment,
+        "language": result.language,
+        "model": llm.model_name,
+    }
+
+
+class ReportV3Request(BaseModel):
+    message: str
+
+
+@app.post("/report-v3")
+def report_v3(request: ReportV3Request):
+    # The chain has no parser at the end, yet "result" is STILL a
+    # ChatResponse object -- the model itself was told the shape.
+    result = report_v3_chain.invoke({"message": request.message})
+
+    # Same dot access as /report-v2. Nothing here had to change.
     return {
         "summary": result.summary,
         "sentiment": result.sentiment,

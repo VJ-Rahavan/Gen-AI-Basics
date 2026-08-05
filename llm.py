@@ -342,3 +342,34 @@ pydantic_parser = PydanticOutputParser(pydantic_object=ChatResponse)
 # The prompt is the same one from Lesson 10 -- we only swap the parser,
 # so the difference we see is caused by validation and nothing else.
 report_v2_chain = cleaner | report_prompt | llm | pydantic_parser
+
+
+# ----- Lesson 12: let the MODEL know the shape, instead of asking in words -----
+
+# No JSON example, no braces to double, no "reply with JSON only".
+# The shape is sent separately, through the API, by with_structured_output.
+REPORT_V3_SYSTEM_PROMPT = """You analyse the user's message.
+
+Keep the summary to one short sentence.
+Use lowercase for the sentiment and the language."""
+
+
+report_v3_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", REPORT_V3_SYSTEM_PROMPT),
+        ("human", "{message}"),
+    ]
+)
+
+
+# Attach the ChatResponse shape to the model itself.
+# Groq is told the exact schema through the API, so the model replies in that
+# shape by construction instead of being asked for it in words.
+# This does not remove the parsing step -- LangChain still adds one for us,
+# inside structured_llm. We just no longer write it, or describe the shape twice.
+structured_llm = llm.with_structured_output(ChatResponse)
+
+
+# We write three pieces; LangChain expands structured_llm into two, so the
+# finished chain still has four steps. Print chain.steps to see it.
+report_v3_chain = cleaner | report_v3_prompt | structured_llm
