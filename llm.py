@@ -19,6 +19,9 @@ from langchain_core.output_parsers import (
 # BaseModel describes a shape. Field lets us describe each individual value.
 from pydantic import BaseModel, Field
 
+# The @tool decorator turns an ordinary function into something the model can call.
+from langchain_core.tools import tool
+
 # RunnableLambda turns any ordinary Python function into a chain component.
 # RunnableMap runs several runnables AT THE SAME TIME on the same input.
 # RunnableBranch picks ONE runnable to run, based on a condition.
@@ -373,3 +376,74 @@ structured_llm = llm.with_structured_output(ChatResponse)
 # We write three pieces; LangChain expands structured_llm into two, so the
 # finished chain still has four steps. Print chain.steps to see it.
 report_v3_chain = cleaner | report_v3_prompt | structured_llm
+
+
+# ----- Lesson 13: give the model a tool it can choose to use -----
+
+
+# @tool turns this ordinary function into a Tool the model is allowed to call.
+# The DOCSTRING below is not a comment -- LangChain sends it to the model as the
+# tool's description, and the model reads it to decide when this tool applies.
+# A tool without a docstring is an error.
+@tool
+def calculator(operation: str, first_number: float, second_number: float) -> str:
+    """Do arithmetic on two numbers.
+
+    Use this whenever the user asks for a calculation.
+    operation must be one of: add, subtract, multiply, divide.
+    """
+    # "elif" means "else if" -- it checks the next condition only if the
+    # previous ones were False. Python has no "switch" statement.
+    if operation == "add":
+        result = first_number + second_number
+    elif operation == "subtract":
+        result = first_number - second_number
+    elif operation == "multiply":
+        result = first_number * second_number
+    elif operation == "divide":
+        # Dividing by zero would crash Python, so we stop before that happens.
+        if second_number == 0:
+            return "Cannot divide by zero."
+        result = first_number / second_number
+    else:
+        # The model sent an operation we do not support.
+        return "Unknown operation. Use add, subtract, multiply or divide."
+
+    # We return TEXT rather than a number, so that answers and error messages
+    # can both travel back the same way.
+    return str(result)
+
+
+# Give the model a list of tools it is allowed to use.
+# This does NOT run anything -- it only tells Groq which tools exist.
+# The model stays free to answer normally instead.
+llm_with_tools = llm.bind_tools([calculator])
+
+
+# A plain function that does the two steps by hand, so we can watch them.
+def answer_with_calculator(message):
+    """Ask the model, then run the calculator only if the model asked us to."""
+    # STEP 1: the model reads the question and DECIDES.
+    reply = llm_with_tools.invoke(message)
+
+    # reply.tool_calls is a LIST. It is empty when the model chose to answer
+    # by itself, and holds one entry per tool the model wants called.
+    if len(reply.tool_calls) == 0:
+        return {
+            "answer": reply.content,
+            "tool_used": None,
+            "tool_args": None,
+        }
+
+    # STEP 2: the model asked for a tool. [0] is the first (and here, only) one.
+    first_call = reply.tool_calls[0]
+
+    # WE run the tool -- the model cannot run code, it can only ask.
+    # first_call["args"] is the dictionary of arguments the model filled in.
+    tool_result = calculator.invoke(first_call["args"])
+
+    return {
+        "answer": tool_result,
+        "tool_used": first_call["name"],
+        "tool_args": first_call["args"],
+    }

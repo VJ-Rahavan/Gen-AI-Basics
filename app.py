@@ -18,6 +18,7 @@ from llm import (
     report_chain,
     report_v2_chain,
     report_v3_chain,
+    answer_with_calculator,
 )
 
 
@@ -190,5 +191,25 @@ def report_v3(request: ReportV3Request):
         "summary": result.summary,
         "sentiment": result.sentiment,
         "language": result.language,
+        "model": llm.model_name,
+    }
+
+
+class CalculateRequest(BaseModel):
+    message: str
+
+
+@app.post("/calculate")
+def calculate(request: CalculateRequest):
+    # All the work happens in llm.py. The result is a dictionary telling us
+    # both the answer AND whether the model chose to use the tool.
+    result = answer_with_calculator(request.message)
+
+    # We report tool_used and tool_args so the model's DECISION is visible
+    # in the response, instead of something we have to guess at.
+    return {
+        "answer": result["answer"],
+        "tool_used": result["tool_used"],
+        "tool_args": result["tool_args"],
         "model": llm.model_name,
     }

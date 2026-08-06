@@ -41,4 +41,14 @@ Then open http://127.0.0.1:8000/docs
 - [x] [Lesson 10](docs/lesson-10.md) — JsonOutputParser
 - [x] [Lesson 11](docs/lesson-11.md) — PydanticOutputParser
 - [x] [Lesson 12](docs/lesson-12.md) — Structured Output
+
+### Next: Tools and Memory (no Agents or LangGraph yet)
+
+- [x] [Lesson 13](docs/lesson-13.md) — First Tool: Calculator, and the `@tool` decorator
+- [ ] Lesson 14 — Second Tool: current date and time
+- [ ] Lesson 15 — Tool Schema with Pydantic validation
+- [ ] Lesson 16 — ConversationBufferMemory
+- [ ] Lesson 17 — ConversationWindowMemory
+- [ ] Lesson 18 — ConversationSummaryMemory
+- [ ] Lesson 19 — ConversationTokenBufferMemory
 # Gen-AI-Basics
